@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import unittest
 import tempfile
-import shutil
-import os
 from confix import *
 
 class TestConfix(unittest.TestCase):
@@ -109,8 +107,25 @@ class TestConfix(unittest.TestCase):
         self.cfgx.rm(self._aConfigFile)
     
     def test_merge_no_mergeTool(self):
+        self.cfgx.add(self._aConfigFile)
+        self.cfgx.unlink(self._aConfigFile)
         with self.assertRaises(ConfixError):
             self.cfgx.merge(self._aConfigFile)
+    
+    def test_merge_invalid_mergeTool(self):    
+        self.cfgx.add(self._aConfigFile)
+        self.cfgx.unlink(self._aConfigFile)
+        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/an/invalid/merge/tool')
+        with self.assertRaises(ConfixError):
+            self.cfgx.merge(self._aConfigFile)
+    
+    def test_merge_ok(self):
+        self.cfgx.add(self._aConfigFile)
+        self.cfgx.unlink(self._aConfigFile)
+        with open(self._aConfigFile, 'a+') as confFile:
+            confFile.write("asdf")
+        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/usr/bin/ls') # no interactive merge tool for the test, just an executable that exists
+        self.cfgx.merge(self._aConfigFile)
      
     def test_fileList(self):
         self.cfgx.add(self._aConfigFile)

@@ -11,6 +11,8 @@ import os
 import logging
 import sys
 import datetime
+import configparser
+from subprocess import call
 
 logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
@@ -22,17 +24,29 @@ class Confix():
         self.__CONF_FILE = os.path.join(self._ROOT_DIR, 'config')
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles')
         self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')   
-        self._MERGE_TOOL = None
         os.makedirs(self._REPO_DIR, exist_ok=True)
         os.makedirs(self._BACKUP_DIR, exist_ok=True)
+        # config values
+        self._mergeTool = None
         if not os.path.exists(self.__CONF_FILE):
-            os.mknod(self.__CONF_FILE)
+            self.__createDefaultConfig()
+        self.__readConfig()
+        logging.debug("Config file loaded")
+    
+    def __createDefaultConfig(self):
+        with open(self.__CONF_FILE, 'w+') as config:
+            config.write("[MAIN]\n")
+            config.write("MERGE_TOOL = ")
+    
+    def __readConfig(self):
+        config = configparser.ConfigParser()
+        config.read(self.__CONF_FILE)
         try:
-            with open(self.__CONF_FILE, 'r') as f:
-                #logging.debug("Config file loaded")
-                pass
-        except FileNotFoundError:
-            logging.debug("No config file found")
+            self._mergeTool = config.get('MAIN','MERGE_TOOL')
+        except configparser.NoSectionError:
+            pass
+        except configparser.NoOptionError: 
+            pass
     
     def __getRepoFilePath(self, filePath):
         absFilePath = os.path.abspath(filePath)
@@ -62,9 +76,21 @@ class Confix():
         shutil.copy2(filePath, backupFilePath)
         logging.debug("original file backed up to: " + backupFilePath)
     
-    def __merge(self, file1, file2):
-        if not self._MERGE_TOOL:
-            raise ConfixError("you have to set MERGE_TOOL in " + self.__CONF_FILE)
+    def setConfig(self, section, key, value):
+        config = configparser.ConfigParser()
+        config.read(self.__CONF_FILE)
+        config.set(section, key, value)
+        with open(self.__CONF_FILE, 'w') as configfile:
+            config.write(configfile)
+        self.__readConfig()
+    
+    def __merge(self, filePath1, filePath2):
+        if not self._mergeTool:
+            raise ConfixError("you have to specify a MERGE_TOOL in " + self.__CONF_FILE)
+        if not os.path.exists(self._mergeTool):
+            raise ConfixError("MERGE_TOOL " + self._mergeTool + " specified in " + self.__CONF_FILE + " does not exist")
+        if call(self._mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
+            raise ConfixError("MERGE_TOOL returned an error")
     
     def merge(self, filePath):
         if not os.path.exists(filePath):
