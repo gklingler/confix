@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import unittest
 import tempfile
-from confix import *
+import os
+import shutil
+import configparser
+from subprocess import call
+from confix import Confix, ConfixError
 
+
+#@unittest.skip('')
 class TestConfix(unittest.TestCase):
     def setUp(self):
         self._ROOT_DIR = tempfile.mkdtemp()
@@ -106,6 +112,12 @@ class TestConfix(unittest.TestCase):
         self.cfgx.unlink(self._aConfigFile)
         self.cfgx.rm(self._aConfigFile)
     
+    def test_setConfig(self):
+        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/the/merge/tool')
+        config = configparser.ConfigParser()
+        config.read(os.path.join(self._ROOT_DIR, 'config'))
+        self.assertEqual(config.get('MAIN','MERGE_TOOL'), '/the/merge/tool')
+    
     def test_merge_no_mergeTool(self):
         self.cfgx.add(self._aConfigFile)
         self.cfgx.unlink(self._aConfigFile)
@@ -142,6 +154,30 @@ class TestConfix(unittest.TestCase):
             else:
                 assert False
 
+#@unittest.skip('')
+class TestConfixCmdLine(unittest.TestCase):
+    def setUp(self):
+        self._ROOT_DIR = tempfile.mkdtemp()
+        self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
+        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
+        self.cfgx = Confix(self._ROOT_DIR)
+        
+        # copy all testfiles to a tempdir to avoid destroying them at a test
+        self._TESTFILES_DIR = tempfile.mkdtemp()
+        shutil.copytree('testFiles', os.path.join(self._TESTFILES_DIR, 'testFiles'), symlinks=True)
+        #testfiles:
+        self._aSymbolicLink = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aSymbolicLink.conf')
+        self._aConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aConfigFile.conf')
+        self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
+        self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') 
+    
+    def test_merge(self):    
+        cmdAdd = self.__confix + ' add ' + self._aConfigFile
+        cmdUnlink = self.__confix + ' unlink ' + self._aConfigFile
+        cmdMerge = self.__confix + ' merge ' + self._aConfigFile
+        call(cmdAdd, shell=True)
+        call(cmdUnlink, shell=True)
+        self.assertEqual(call(cmdMerge, shell=True), 0)
     
 if __name__ == '__main__':
     unittest.main()

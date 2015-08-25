@@ -186,6 +186,9 @@ def cmdAddHandler(args):
 
 def cmdLinkHandler(args):
     Confix().link(args.file, args.force)
+
+def cmdUnlinkHandler(args):
+    Confix().unlink(args.file)
     
 def cmdMergeHandler(args):
     Confix().merge(args.file)
@@ -204,6 +207,10 @@ if __name__ == '__main__':
     parser_link.add_argument('file', help='the file to link')
     parser_link.add_argument('--force', action='store_true', help='link file from confix repo even even it it already exists (the original file - if existing - is backed up)')
     parser_link.set_defaults(func=cmdLinkHandler)
+    
+    parser_unlink = subparsers.add_parser('unlink', help='unlinks a file from the confix repo')
+    parser_unlink.add_argument('file', help='the file to unlink')
+    parser_unlink.set_defaults(func=cmdUnlinkHandler)
     
     parser_merge = subparsers.add_parser('merge', help='opens the given file and the file in the confix repo in the configured MERGE_TOOL')
     parser_merge.add_argument('file', help='the file to merge')
