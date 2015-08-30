@@ -15,6 +15,7 @@ class TestConfix(unittest.TestCase):
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
         self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
         self.cfgx = Confix(self._ROOT_DIR)
+        self.cfgx.setRepo(self._REPO_DIR)
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
         self._TESTFILES_DIR = tempfile.mkdtemp()
@@ -113,7 +114,7 @@ class TestConfix(unittest.TestCase):
         self.cfgx.rm(self._aConfigFile)
     
     def test_setConfig(self):
-        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/the/merge/tool')
+        self.cfgx.setMergeTool('/the/merge/tool')
         config = configparser.ConfigParser()
         config.read(os.path.join(self._ROOT_DIR, 'config'))
         self.assertEqual(config.get('MAIN','MERGE_TOOL'), '/the/merge/tool')
@@ -127,7 +128,7 @@ class TestConfix(unittest.TestCase):
     def test_merge_invalid_mergeTool(self):    
         self.cfgx.add(self._aConfigFile)
         self.cfgx.unlink(self._aConfigFile)
-        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/an/invalid/merge/tool')
+        self.cfgx.setMergeTool('/an/invalid/merge/tool')
         with self.assertRaises(ConfixError):
             self.cfgx.merge(self._aConfigFile)
     
@@ -136,7 +137,7 @@ class TestConfix(unittest.TestCase):
         self.cfgx.unlink(self._aConfigFile)
         with open(self._aConfigFile, 'a+') as confFile:
             confFile.write("asdf")
-        self.cfgx.setConfig('MAIN', 'MERGE_TOOL', '/usr/bin/ls') # no interactive merge tool for the test, just an executable that exists
+        self.cfgx.setMergeTool('/usr/bin/ls') # no interactive merge tool for the test, just an executable that exists
         self.cfgx.merge(self._aConfigFile)
      
     def test_fileList(self):
@@ -160,7 +161,6 @@ class TestConfixCmdLine(unittest.TestCase):
         self._ROOT_DIR = tempfile.mkdtemp()
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
         self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
-        self.cfgx = Confix(self._ROOT_DIR)
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
         self._TESTFILES_DIR = tempfile.mkdtemp()
@@ -172,11 +172,14 @@ class TestConfixCmdLine(unittest.TestCase):
         self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') 
     
     def test_merge(self):    
+        cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
         cmdAdd = self.__confix + ' add ' + self._aConfigFile
         cmdUnlink = self.__confix + ' unlink ' + self._aConfigFile
         cmdMerge = self.__confix + ' merge ' + self._aConfigFile
-        call(cmdAdd, shell=True)
-        call(cmdUnlink, shell=True)
+        
+        self.assertEqual(call(cmdSetRepo, shell=True), 0)
+        self.assertEqual(call(cmdAdd, shell=True), 0)
+        self.assertEqual(call(cmdUnlink, shell=True), 0)
         self.assertEqual(call(cmdMerge, shell=True), 0)
     
 if __name__ == '__main__':

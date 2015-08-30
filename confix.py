@@ -22,35 +22,39 @@ class Confix():
     def __init__(self, rootDir = '~/.config/confix'):
         self._ROOT_DIR = os.path.expanduser(rootDir)
         self.__CONF_FILE = os.path.join(self._ROOT_DIR, 'config')
-        self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles')
-        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')   
-        os.makedirs(self._REPO_DIR, exist_ok=True)
+        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
         os.makedirs(self._BACKUP_DIR, exist_ok=True)
         # config values
-        self._mergeTool = None
         if not os.path.exists(self.__CONF_FILE):
             self.__createDefaultConfig()
-        self.__readConfig()
+        self.__updateConfig()
         logging.debug("Config file loaded")
     
+    def __updateConfig(self):
+        self.__config = configparser.ConfigParser()
+        self.__config.read(self.__CONF_FILE)
+        self.__mergeTool = self.__queryConfig('MAIN', 'MERGE_TOOL')
+        self.__repoDir = self.__queryConfig('MAIN', 'REPO')
+        #if not self.__repoDir:
+        #    raise ConfixError("no REPO is set in the config: " + self.__CONF_FILE)            
+        
     def __createDefaultConfig(self):
-        with open(self.__CONF_FILE, 'w+') as config:
-            config.write("[MAIN]\n")
-            config.write("MERGE_TOOL = ")
+        self.__setConfigValue("MAIN", "MERGE_TOOL", "")
+        self.__setConfigValue("MAIN", "REPO", "") 
     
-    def __readConfig(self):
-        config = configparser.ConfigParser()
-        config.read(self.__CONF_FILE)
+    def __queryConfig(self, section, option):
+        value = None
         try:
-            self._mergeTool = config.get('MAIN','MERGE_TOOL')
+            value = self.__config.get(section, option)
         except configparser.NoSectionError:
             pass
         except configparser.NoOptionError: 
             pass
+        return value
     
     def __getRepoFilePath(self, filePath):
         absFilePath = os.path.abspath(filePath)
-        return os.path.join(self._REPO_DIR, absFilePath.lstrip(os.path.sep))
+        return os.path.join(self.__repoDir, absFilePath.lstrip(os.path.sep))
     
     def __existsInRepo(self, filePath):
         repoFilePath = self.__getRepoFilePath(filePath)
@@ -76,20 +80,30 @@ class Confix():
         shutil.copy2(filePath, backupFilePath)
         logging.debug("original file backed up to: " + backupFilePath)
     
-    def setConfig(self, section, key, value):
+    def setRepo(self, localRepoPath):
+        #if not os.path.exists(localRepoPath):
+        #    raise ConfixError("repo path " + localRepoPath + " does not exist")
+        self.__setConfigValue("MAIN", "REPO", localRepoPath)
+    
+    def setMergeTool(self, mergeToolPath):
+        self.__setConfigValue("MAIN", "MERGE_TOOL", mergeToolPath)
+    
+    def __setConfigValue(self, section, key, value):
         config = configparser.ConfigParser()
         config.read(self.__CONF_FILE)
+        if not config.has_section(section):
+            config.add_section(section)
         config.set(section, key, value)
         with open(self.__CONF_FILE, 'w') as configfile:
             config.write(configfile)
-        self.__readConfig()
+        self.__updateConfig()
     
     def __merge(self, filePath1, filePath2):
-        if not self._mergeTool:
+        if not self.__mergeTool:
             raise ConfixError("you have to specify a MERGE_TOOL in " + self.__CONF_FILE)
-        if not os.path.exists(self._mergeTool):
-            raise ConfixError("MERGE_TOOL " + self._mergeTool + " specified in " + self.__CONF_FILE + " does not exist")
-        if call(self._mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
+        if not os.path.exists(self.__mergeTool):
+            raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__CONF_FILE + " does not exist")
+        if call(self.__mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
             raise ConfixError("MERGE_TOOL returned an error")
     
     def merge(self, filePath):
@@ -168,9 +182,9 @@ class Confix():
     
     def list(self):
         confixFiles = []
-        for root,_,files in os.walk(self._REPO_DIR):
+        for root,_,files in os.walk(self.__repoDir):
             for file in files:
-                confixFile = os.path.join(root, file)[len(self._REPO_DIR):]
+                confixFile = os.path.join(root, file)[len(self.__repoDir):]
                 confixFiles.append([confixFile, self.__isLinked(confixFile)])
         return confixFiles
     
@@ -180,6 +194,8 @@ class Confix():
     def pull(self):
         pass  
 
+def cmdSetRepoHandler(args):
+    Confix().setRepo(args.repo)
 
 def cmdAddHandler(args):
     Confix().add(args.file, args.force)
@@ -197,6 +213,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A tool that helps you managing your config files.')
     subparsers = parser.add_subparsers(dest='subparser_name')
     subparsers.required = True
+     
+    parser_setRepo = subparsers.add_parser('setRepo', help='sets the confix repo to the given path')
+    parser_setRepo.add_argument('repo', help='path to the confix repo')
+    parser_setRepo.set_defaults(func=cmdSetRepoHandler)
      
     parser_add = subparsers.add_parser('add', help='copies a file to the confix repo and replaces the original file with a symlink')
     parser_add.add_argument('file', help='the file to add')
