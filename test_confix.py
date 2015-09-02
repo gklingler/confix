@@ -13,9 +13,10 @@ class TestConfix(unittest.TestCase):
     def setUp(self):
         self._ROOT_DIR = tempfile.mkdtemp()
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
-        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
+        os.makedirs(self._REPO_DIR, exist_ok=True)
         self.cfgx = Confix(self._ROOT_DIR)
         self.cfgx.setRepo(self._REPO_DIR)
+        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
         self._TESTFILES_DIR = tempfile.mkdtemp()
@@ -31,7 +32,9 @@ class TestConfix(unittest.TestCase):
     def test_init(self):
         self.assertTrue(os.path.exists(self._ROOT_DIR))
         self.assertTrue(os.path.exists(self._ROOT_DIR + '/config'))
-        self.assertTrue(os.path.exists(self._BACKUP_DIR))
+        self.assertTrue(os.path.exists(self._BACKUP_DIR))  
+        with self.assertRaises(ConfixError):
+            Confix("/an/invalid/rootDir")
  
     def test_add_non_existing(self):
         with self.assertRaises(ConfixError):
@@ -160,6 +163,7 @@ class TestConfixCmdLine(unittest.TestCase):
     def setUp(self):
         self._ROOT_DIR = tempfile.mkdtemp()
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
+        os.makedirs(self._REPO_DIR, exist_ok=True)
         self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
@@ -175,11 +179,13 @@ class TestConfixCmdLine(unittest.TestCase):
         cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
         cmdAdd = self.__confix + ' add ' + self._aConfigFile
         cmdUnlink = self.__confix + ' unlink ' + self._aConfigFile
+        cmdSetMergeTool = self.__confix + ' setMergeTool /bin/ls'
         cmdMerge = self.__confix + ' merge ' + self._aConfigFile
         
         self.assertEqual(call(cmdSetRepo, shell=True), 0)
         self.assertEqual(call(cmdAdd, shell=True), 0)
         self.assertEqual(call(cmdUnlink, shell=True), 0)
+        self.assertEqual(call(cmdSetMergeTool, shell=True), 0)
         self.assertEqual(call(cmdMerge, shell=True), 0)
     
 if __name__ == '__main__':

@@ -19,8 +19,12 @@ logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 class ConfixError(Exception): pass
 
 class Confix():
-    def __init__(self, rootDir = '~/.config/confix'):
+    def __init__(self, rootDir=None):
+        if not rootDir:
+            rootDir = '~/.config/confix'
         self._ROOT_DIR = os.path.expanduser(rootDir)
+        if not os.path.isdir(self._ROOT_DIR):
+            raise ConfixError("not a valid confix root directory: " + self._ROOT_DIR)
         self.__CONF_FILE = os.path.join(self._ROOT_DIR, 'config')
         self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
         os.makedirs(self._BACKUP_DIR, exist_ok=True)
@@ -35,8 +39,6 @@ class Confix():
         self.__config.read(self.__CONF_FILE)
         self.__mergeTool = self.__queryConfig('MAIN', 'MERGE_TOOL')
         self.__repoDir = self.__queryConfig('MAIN', 'REPO')
-        #if not self.__repoDir:
-        #    raise ConfixError("no REPO is set in the config: " + self.__CONF_FILE)            
         
     def __createDefaultConfig(self):
         self.__setConfigValue("MAIN", "MERGE_TOOL", "")
@@ -81,8 +83,8 @@ class Confix():
         logging.debug("original file backed up to: " + backupFilePath)
     
     def setRepo(self, localRepoPath):
-        #if not os.path.exists(localRepoPath):
-        #    raise ConfixError("repo path " + localRepoPath + " does not exist")
+        if not os.path.isdir(localRepoPath):
+            raise ConfixError("repo path " + localRepoPath + " does not exist")
         self.__setConfigValue("MAIN", "REPO", localRepoPath)
     
     def setMergeTool(self, mergeToolPath):
@@ -200,14 +202,20 @@ def cmdSetRepoHandler(args):
 def cmdAddHandler(args):
     Confix().add(args.file, args.force)
 
+def cmdRmHandler(args):
+    Confix(args.rootDir).setMergeTool(args.file)
+
+def cmdSetMergeToolHandler(args):
+    Confix(args.rootDir).setMergeTool(args.mergeTool)
+
 def cmdLinkHandler(args):
     Confix().link(args.file, args.force)
 
 def cmdUnlinkHandler(args):
     Confix().unlink(args.file)
-    
+        
 def cmdMergeHandler(args):
-    Confix().merge(args.file)
+    Confix(args.rootDir).merge(args.file)
  
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A tool that helps you managing your config files.')
@@ -216,24 +224,39 @@ if __name__ == '__main__':
      
     parser_setRepo = subparsers.add_parser('setRepo', help='sets the confix repo to the given path')
     parser_setRepo.add_argument('repo', help='path to the confix repo')
+    parser_setRepo.add_argument('--rootDir', help=argparse.SUPPRESS)
     parser_setRepo.set_defaults(func=cmdSetRepoHandler)
      
     parser_add = subparsers.add_parser('add', help='copies a file to the confix repo and replaces the original file with a symlink')
     parser_add.add_argument('file', help='the file to add')
     parser_add.add_argument('--force', action='store_true', help='override the file in the confix repo if it already exists')
+    parser_add.add_argument('--rootDir', help=argparse.SUPPRESS)
     parser_add.set_defaults(func=cmdAddHandler)
+    
+    parser_rm = subparsers.add_parser('rm', help='removes a file from the confix repo')
+    parser_rm.add_argument('file', help='the file to remove ')
+    parser_rm.add_argument('--rootDir', help=argparse.SUPPRESS)
+    parser_rm.set_defaults(func=cmdRmHandler)
+    
+    parser_mergeTool = subparsers.add_parser('setMergeTool', help='sets the merge tool')
+    parser_mergeTool.add_argument('mergeTool', help='the path of the merge tool')
+    parser_mergeTool.add_argument('--rootDir', help=argparse.SUPPRESS)
+    parser_mergeTool.set_defaults(func=cmdSetMergeToolHandler)
      
     parser_link = subparsers.add_parser('link', help='creates a link to an existing file in the confix repo')
     parser_link.add_argument('file', help='the file to link')
     parser_link.add_argument('--force', action='store_true', help='link file from confix repo even even it it already exists (the original file - if existing - is backed up)')
+    parser_link.add_argument('--rootDir', help=argparse.SUPPRESS)
     parser_link.set_defaults(func=cmdLinkHandler)
     
     parser_unlink = subparsers.add_parser('unlink', help='unlinks a file from the confix repo')
     parser_unlink.add_argument('file', help='the file to unlink')
+    parser_unlink.add_argument('--rootDir', help=argparse.SUPPRESS)
     parser_unlink.set_defaults(func=cmdUnlinkHandler)
     
     parser_merge = subparsers.add_parser('merge', help='opens the given file and the file in the confix repo in the configured MERGE_TOOL')
     parser_merge.add_argument('file', help='the file to merge')
+    parser_merge.add_argument('--rootDir', help=argparse.SUPPRESS)
     parser_merge.set_defaults(func=cmdMergeHandler)
 
     args = parser.parse_args(sys.argv[1:])
