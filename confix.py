@@ -14,7 +14,7 @@ import datetime
 import configparser
 from subprocess import call
 
-logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 class ConfixError(Exception): pass
 
@@ -38,7 +38,7 @@ class Confix():
         self.__config = configparser.ConfigParser()
         self.__config.read(self.__CONF_FILE)
         self.__mergeTool = self.__queryConfig('MAIN', 'MERGE_TOOL')
-        self.__repoDir = self.__queryConfig('MAIN', 'REPO')
+        self.__repoDir = os.path.normpath(self.__queryConfig('MAIN', 'REPO'))
         
     def __createDefaultConfig(self):
         self.__setConfigValue("MAIN", "MERGE_TOOL", "")
@@ -81,15 +81,7 @@ class Confix():
         os.makedirs(os.path.dirname(backupFilePath), exist_ok=True)
         shutil.copy2(filePath, backupFilePath)
         logging.debug("original file backed up to: " + backupFilePath)
-    
-    def setRepo(self, localRepoPath):
-        if not os.path.isdir(localRepoPath):
-            raise ConfixError("repo path " + localRepoPath + " does not exist")
-        self.__setConfigValue("MAIN", "REPO", localRepoPath)
-    
-    def setMergeTool(self, mergeToolPath):
-        self.__setConfigValue("MAIN", "MERGE_TOOL", mergeToolPath)
-    
+        
     def __setConfigValue(self, section, key, value):
         config = configparser.ConfigParser()
         config.read(self.__CONF_FILE)
@@ -107,6 +99,14 @@ class Confix():
             raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__CONF_FILE + " does not exist")
         if call(self.__mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
             raise ConfixError("MERGE_TOOL returned an error")
+    
+    def setRepo(self, localRepoPath):
+        if not os.path.isdir(localRepoPath):
+            raise ConfixError("repo path " + localRepoPath + " does not exist")
+        self.__setConfigValue("MAIN", "REPO", localRepoPath)
+    
+    def setMergeTool(self, mergeToolPath):
+        self.__setConfigValue("MAIN", "MERGE_TOOL", mergeToolPath)
     
     def merge(self, filePath):
         if not os.path.exists(filePath):
@@ -182,19 +182,28 @@ class Confix():
         os.unlink(symlink)
         shutil.copy2(self.__getRepoFilePath(symlink), symlink)
     
+    def info(self):
+        """ Print some repo info. """
+        info = "repo: " + self.__repoDir
+        return info
+
     def list(self):
+        """ List files in repo. """
         confixFiles = []
         for root,_,files in os.walk(self.__repoDir):
             for file in files:
                 confixFile = os.path.join(root, file)[len(self.__repoDir):]
                 confixFiles.append([confixFile, self.__isLinked(confixFile)])
         return confixFiles
-    
-    def push(self):
-        pass
-    
-    def pull(self):
-        pass  
+
+
+def cmdInfoHandler(args):
+    print(Confix(args.rootDir).info())
+
+def cmdListHandler(args):
+    for file in Confix(args.rootDir).list():
+        linked = '+' if file[1] else ' '
+        print(linked + '   ' + file[0])
 
 def cmdSetRepoHandler(args):
     Confix(args.rootDir).setRepo(args.repo)
@@ -222,7 +231,13 @@ if __name__ == '__main__':
     parser.add_argument('--rootDir', help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(dest='subparser_name')
     subparsers.required = True
-     
+    
+    parser_info = subparsers.add_parser('info', help='shows various infomation')
+    parser_info.set_defaults(func=cmdInfoHandler)
+    
+    parser_list = subparsers.add_parser('list', help='')
+    parser_list.set_defaults(func=cmdListHandler)
+    
     parser_setRepo = subparsers.add_parser('setRepo', help='sets the confix repo to the given path')
     parser_setRepo.add_argument('repo', help='path to the confix repo')
     parser_setRepo.set_defaults(func=cmdSetRepoHandler)

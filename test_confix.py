@@ -160,6 +160,7 @@ class TestConfix(unittest.TestCase):
 
 #@unittest.skip('')
 class TestConfixCmdLine(unittest.TestCase):
+    """ These tests utilize the command line interface. """
     def setUp(self):
         self._ROOT_DIR = tempfile.mkdtemp()
         self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
@@ -193,6 +194,14 @@ class TestConfixCmdLine(unittest.TestCase):
         cmdRm = self.__confix + ' rm ' + self._anotherConfigFile
         self.assertEqual(call(cmdAdd, shell=True), 0)
         self.assertEqual(call(cmdRm, shell=True), 0)
+    
+    def test_execInfo(self):
+        cmdInfo = self.__confix + ' info'
+        self.assertEqual(call(cmdInfo, shell=True), 0)
+    
+    def test_execList(self):
+        cmdList = self.__confix + ' list'
+        self.assertEqual(call(cmdList, shell=True), 0)
     
 if __name__ == '__main__':
     unittest.main()
