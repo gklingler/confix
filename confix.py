@@ -22,23 +22,25 @@ class Confix():
     def __init__(self, rootDir=None):
         if not rootDir:
             rootDir = '~/.config/confix'
-        self._ROOT_DIR = os.path.expanduser(rootDir)
-        if not os.path.isdir(self._ROOT_DIR):
-            raise ConfixError("not a valid confix root directory: " + self._ROOT_DIR)
-        self.__CONF_FILE = os.path.join(self._ROOT_DIR, 'config')
-        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
-        os.makedirs(self._BACKUP_DIR, exist_ok=True)
+        self.__rootDir = os.path.expanduser(rootDir)
+        if not os.path.isdir(self.__rootDir):
+            raise ConfixError("not a valid confix root directory: " + self.__rootDir)
+        self.__conf_file = os.path.join(self.__rootDir, 'config')
+        self.__backupDir = os.path.join(self.__rootDir, 'backup')
+        os.makedirs(self.__backupDir, exist_ok=True)
         # config values
-        if not os.path.exists(self.__CONF_FILE):
+        if not os.path.exists(self.__conf_file):
             self.__createDefaultConfig()
         self.__updateConfig()
         logging.debug("Config file loaded")
     
     def __updateConfig(self):
         self.__config = configparser.ConfigParser()
-        self.__config.read(self.__CONF_FILE)
+        self.__config.read(self.__conf_file)
         self.__mergeTool = self.__queryConfig('MAIN', 'MERGE_TOOL')
-        self.__repoDir = os.path.normpath(self.__queryConfig('MAIN', 'REPO'))
+        self.__repoDir = self.__queryConfig('MAIN', 'REPO')
+        if self.__repoDir:
+            self.__repoDir = os.path.normpath(self.__repoDir)
         
     def __createDefaultConfig(self):
         self.__setConfigValue("MAIN", "MERGE_TOOL", "")
@@ -76,7 +78,7 @@ class Confix():
         suffix = ""
         if withTimestamp:
             suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H:%m:%S")
-        backupFilePath = self._BACKUP_DIR + '/' + os.path.abspath(filePath) + '.' + suffix
+        backupFilePath = self.__backupDir + '/' + os.path.abspath(filePath) + '.' + suffix
         backupFilePath = os.path.normpath(backupFilePath)
         os.makedirs(os.path.dirname(backupFilePath), exist_ok=True)
         shutil.copy2(filePath, backupFilePath)
@@ -84,19 +86,19 @@ class Confix():
         
     def __setConfigValue(self, section, key, value):
         config = configparser.ConfigParser()
-        config.read(self.__CONF_FILE)
+        config.read(self.__conf_file)
         if not config.has_section(section):
             config.add_section(section)
         config.set(section, key, value)
-        with open(self.__CONF_FILE, 'w') as configfile:
+        with open(self.__conf_file, 'w') as configfile:
             config.write(configfile)
         self.__updateConfig()
     
     def __merge(self, filePath1, filePath2):
         if not self.__mergeTool:
-            raise ConfixError("you have to specify a MERGE_TOOL in " + self.__CONF_FILE)
+            raise ConfixError("you have to specify a MERGE_TOOL in " + self.__conf_file)
         if not os.path.exists(self.__mergeTool):
-            raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__CONF_FILE + " does not exist")
+            raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__conf_file + " does not exist")
         if call(self.__mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
             raise ConfixError("MERGE_TOOL returned an error")
     

@@ -11,12 +11,12 @@ from confix import Confix, ConfixError
 #@unittest.skip('')
 class TestConfix(unittest.TestCase):
     def setUp(self):
-        self._ROOT_DIR = tempfile.mkdtemp()
-        self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
+        self.__rootDir = tempfile.mkdtemp()
+        self._REPO_DIR = os.path.join(self.__rootDir, 'dotfiles.git')
         os.makedirs(self._REPO_DIR, exist_ok=True)
-        self.cfgx = Confix(self._ROOT_DIR)
+        self.cfgx = Confix(self.__rootDir)
         self.cfgx.setRepo(self._REPO_DIR)
-        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
+        self.__backupDir = os.path.join(self.__rootDir, 'backup')
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
         self._TESTFILES_DIR = tempfile.mkdtemp()
@@ -30,9 +30,9 @@ class TestConfix(unittest.TestCase):
         pass
     
     def test_init(self):
-        self.assertTrue(os.path.exists(self._ROOT_DIR))
-        self.assertTrue(os.path.exists(self._ROOT_DIR + '/config'))
-        self.assertTrue(os.path.exists(self._BACKUP_DIR))  
+        self.assertTrue(os.path.exists(self.__rootDir))
+        self.assertTrue(os.path.exists(self.__rootDir + '/config'))
+        self.assertTrue(os.path.exists(self.__backupDir))  
         with self.assertRaises(ConfixError):
             Confix("/an/invalid/rootDir")
  
@@ -119,7 +119,7 @@ class TestConfix(unittest.TestCase):
     def test_setConfig(self):
         self.cfgx.setMergeTool('/the/merge/tool')
         config = configparser.ConfigParser()
-        config.read(os.path.join(self._ROOT_DIR, 'config'))
+        config.read(os.path.join(self.__rootDir, 'config'))
         self.assertEqual(config.get('MAIN','MERGE_TOOL'), '/the/merge/tool')
     
     def test_merge_no_mergeTool(self):
@@ -162,10 +162,10 @@ class TestConfix(unittest.TestCase):
 class TestConfixCmdLine(unittest.TestCase):
     """ These tests utilize the command line interface. """
     def setUp(self):
-        self._ROOT_DIR = tempfile.mkdtemp()
-        self._REPO_DIR = os.path.join(self._ROOT_DIR, 'dotfiles.git')
+        self.__rootDir = tempfile.mkdtemp()
+        self._REPO_DIR = os.path.join(self.__rootDir, 'dotfiles.git')
         os.makedirs(self._REPO_DIR, exist_ok=True)
-        self._BACKUP_DIR = os.path.join(self._ROOT_DIR, 'backup')
+        self.__backupDir = os.path.join(self.__rootDir, 'backup')
         
         # copy all testfiles to a tempdir to avoid destroying them at a test
         self._TESTFILES_DIR = tempfile.mkdtemp()
@@ -174,7 +174,7 @@ class TestConfixCmdLine(unittest.TestCase):
         self._aSymbolicLink = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aSymbolicLink.conf')
         self._aConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aConfigFile.conf')
         self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
-        self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') + ' --rootDir=' + self._ROOT_DIR
+        self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') + ' --rootDir=' + self.__rootDir
     
     def test_execSubcmds(self):    
         cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
