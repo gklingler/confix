@@ -175,12 +175,12 @@ class TestConfixCmdLine(unittest.TestCase):
         self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
         self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') 
     
-    def test_merge(self):    
-        cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
-        cmdAdd = self.__confix + ' add ' + self._aConfigFile
-        cmdUnlink = self.__confix + ' unlink ' + self._aConfigFile
-        cmdSetMergeTool = self.__confix + ' setMergeTool /bin/ls'
-        cmdMerge = self.__confix + ' merge ' + self._aConfigFile
+    def test_execSubcmds(self):    
+        cmdSetRepo = self.__confix + ' --rootDir=' + self._ROOT_DIR + ' setRepo ' + self._REPO_DIR
+        cmdAdd = self.__confix + ' --rootDir=' + self._ROOT_DIR  + ' add ' + self._aConfigFile
+        cmdUnlink = self.__confix + ' --rootDir=' + self._ROOT_DIR  + ' unlink ' + self._aConfigFile
+        cmdSetMergeTool = self.__confix + ' --rootDir=' + self._ROOT_DIR  + ' setMergeTool /bin/ls'
+        cmdMerge = self.__confix + ' --rootDir=' + self._ROOT_DIR  + ' merge ' + self._aConfigFile
         
         self.assertEqual(call(cmdSetRepo, shell=True), 0)
         self.assertEqual(call(cmdAdd, shell=True), 0)
