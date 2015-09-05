@@ -103,6 +103,7 @@ class Confix():
             raise ConfixError("MERGE_TOOL returned an error")
     
     def setRepo(self, localRepoPath):
+        localRepoPath = os.path.realpath(localRepoPath)
         if not os.path.isdir(localRepoPath):
             raise ConfixError("repo path " + localRepoPath + " does not exist")
         self.__setConfigValue("MAIN", "REPO", localRepoPath)
@@ -138,7 +139,7 @@ class Confix():
             raise ConfixError(filePath + " is a symlink")
         os.makedirs(os.path.dirname(repoFile), exist_ok=True)
         # copy file to the Confix repo, remove the original file, 
-        # create a symlink the original file path to file in the Confix repo
+        # create a symlink from the original file path to file in the Confix repo
         shutil.copy2(filePath, repoFile)
         self.link(filePath, force=True)
         return True
@@ -214,7 +215,7 @@ def cmdAddHandler(args):
     Confix(args.rootDir).add(args.file, args.force)
 
 def cmdRmHandler(args):
-    Confix(args.rootDir).setMergeTool(args.file)
+    Confix(args.rootDir).rm(args.file)
 
 def cmdSetMergeToolHandler(args):
     Confix(args.rootDir).setMergeTool(args.mergeTool)
