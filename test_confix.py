@@ -28,7 +28,7 @@ class TestConfix(unittest.TestCase):
         #testfiles:
         self._aSymbolicLink = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aSymbolicLink.conf')
         self._aConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aConfigFile.conf')
-        self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
+        self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/subdir/anotherConfigFile.conf')
     
     def tearDown(self):
         pass
@@ -180,7 +180,7 @@ class TestConfixCmdLine(unittest.TestCase):
         #testfiles:
         self._aSymbolicLink = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aSymbolicLink.conf')
         self._aConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aConfigFile.conf')
-        self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
+        self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/subdir/anotherConfigFile.conf')
         self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix') + ' --rootDir=' + self.__rootDir
     
         cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR

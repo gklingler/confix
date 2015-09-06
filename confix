@@ -198,6 +198,7 @@ class Confix():
                 os.remove(filePath)
             else:
                 raise ConfixError(filePath + " already exists (you might want to use --force)")
+        os.makedirs(os.path.dirname(filePath), exist_ok=True)
         os.symlink(self.__getRepoFilePath(filePath), filePath)
         return True
     
