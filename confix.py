@@ -57,8 +57,8 @@ class Confix():
         return value
     
     def __getRepoFilePath(self, filePath):
-        absFilePath = os.path.abspath(filePath)
-        return os.path.join(self.__repoDir, absFilePath.lstrip(os.path.sep))
+        absFilePath = self.__maskHome(os.path.abspath(filePath))
+        return(os.path.join(self.__repoDir, absFilePath.lstrip(os.path.sep)))
     
     def __existsInRepo(self, filePath):
         repoFilePath = self.__getRepoFilePath(filePath)
@@ -66,6 +66,7 @@ class Confix():
     
     def __isLinked(self, path):
         """ Checks if the path is a valid link to a file in the confix repo. """
+        path = self.__unmaskHome(path)
         if not os.path.islink(path):
             return False
         elif os.path.realpath(path) != self.__getRepoFilePath(path):
@@ -101,6 +102,21 @@ class Confix():
             raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__conf_file + " does not exist")
         if call(self.__mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
             raise ConfixError("MERGE_TOOL returned an error")
+    
+    def __getUserHome(self):
+        homeDir = os.environ.get('HOME')
+        if not homeDir:
+            raise ConfixError("$HOME not set")
+        return os.path.normpath(homeDir)
+
+    def __maskHome(self, filePath):
+        homeDir = self.__getUserHome()
+        if filePath.startswith(homeDir):
+           filePath = "/$HOME/" + filePath[len(homeDir):]
+        return os.path.normpath(filePath)
+
+    def __unmaskHome(self, filePath):
+        return os.path.normpath(filePath.replace('/$HOME', self.__getUserHome()))
     
     def setRepo(self, localRepoPath):
         localRepoPath = os.path.realpath(localRepoPath)
