@@ -20,11 +20,13 @@ class ConfixError(Exception): pass
 
 class Confix():
     def __init__(self, rootDir=None):
-        if not rootDir:
-            rootDir = '~/.config/confix'
-        self.__rootDir = os.path.expanduser(rootDir)
+        self.__rootDir = rootDir
+        if not self.__rootDir:
+            self.__rootDir = os.path.join(self.__getUserHome(), '.config/confix')
+            os.makedirs(self.__rootDir, exist_ok=True)
         if not os.path.isdir(self.__rootDir):
-            raise ConfixError("not a valid confix root directory: " + self.__rootDir)
+            raise ConfixError("not a valid confix root directory: " + self.__rootDir)        
+        self.__rootDir = os.path.normpath(self.__rootDir)
         self.__conf_file = os.path.join(self.__rootDir, 'config')
         self.__backupDir = os.path.join(self.__rootDir, 'backup')
         os.makedirs(self.__backupDir, exist_ok=True)
@@ -112,7 +114,7 @@ class Confix():
     def __maskHome(self, filePath):
         homeDir = self.__getUserHome()
         if filePath.startswith(homeDir):
-           filePath = "/$HOME/" + filePath[len(homeDir):]
+            filePath = "/$HOME/" + filePath[len(homeDir):]
         return os.path.normpath(filePath)
 
     def __unmaskHome(self, filePath):
@@ -215,7 +217,6 @@ class Confix():
                 confixFiles.append([confixFile, self.__isLinked(confixFile)])
         return confixFiles
 
-
 def cmdInfoHandler(args):
     print(Confix(args.rootDir).info())
 
@@ -294,4 +295,3 @@ if __name__ == '__main__':
     except ConfixError as e:
         logging.error(str(e))
         exit(1)
-
