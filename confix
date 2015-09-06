@@ -64,7 +64,7 @@ class Confix():
     
     def __getRepoFilePath(self, filePath):
         absFilePath = self.__maskHome(os.path.abspath(filePath))
-        return(os.path.join(self.__repoDir, absFilePath.lstrip(os.path.sep)))
+        return(os.path.join(self.__repoDir, 'files', absFilePath.lstrip(os.path.sep)))
     
     def __existsInRepo(self, filePath):
         repoFilePath = self.__getRepoFilePath(filePath)
@@ -221,10 +221,11 @@ class Confix():
         """ List files in repo. """
         self.__checkPrereq()
         confixFiles = []
-        for root,_,files in os.walk(self.__repoDir):
+        filesDir = os.path.join(self.__repoDir, 'files')
+        for root,_,files in os.walk(filesDir):
             for file in files:
-                confixFile = os.path.join(root, file)[len(self.__repoDir):]
-                confixFiles.append([confixFile, self.__isLinked(confixFile)])
+                confixFile = os.path.join(root, file)[len(filesDir):]
+                confixFiles.append([self.__unmaskHome(confixFile), self.__isLinked(confixFile)])
         return confixFiles
 
 def cmdInfoHandler(args):
