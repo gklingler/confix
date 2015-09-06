@@ -5,8 +5,12 @@ import os
 import shutil
 import configparser
 from subprocess import call
-from confix import Confix, ConfixError
 
+# cannot simply import Confix because confix has no .py extension -> workaround:
+import imp
+ConfixModule = imp.load_source('Confix', 'confix')
+Confix = ConfixModule.Confix
+ConfixError = ConfixModule.ConfixError
 
 #@unittest.skip('')
 class TestConfix(unittest.TestCase):
@@ -140,7 +144,10 @@ class TestConfix(unittest.TestCase):
         self.cfgx.unlink(self._aConfigFile)
         with open(self._aConfigFile, 'a+') as confFile:
             confFile.write("asdf")
-        self.cfgx.setMergeTool('/usr/bin/ls') # no interactive merge tool for the test, just an executable that exists
+        ls = '/bin/ls'
+        if not os.path.exists(ls):
+            ls = '/usr/bin/ls'
+        self.cfgx.setMergeTool(ls) # no interactive merge tool for the test, just an executable that exists
         self.cfgx.merge(self._aConfigFile)
      
     def test_fileList(self):
@@ -174,16 +181,17 @@ class TestConfixCmdLine(unittest.TestCase):
         self._aSymbolicLink = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aSymbolicLink.conf')
         self._aConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/aConfigFile.conf')
         self._anotherConfigFile = os.path.join(os.path.abspath(self._TESTFILES_DIR), 'testFiles/configs/anotherConfigFile.conf')
-        self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix.py') + ' --rootDir=' + self.__rootDir
+        self.__confix = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'confix') + ' --rootDir=' + self.__rootDir
+    
+        cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
+        self.assertEqual(call(cmdSetRepo, shell=True), 0)
     
     def test_execSubcmds(self):    
-        cmdSetRepo = self.__confix + ' setRepo ' + self._REPO_DIR
         cmdAdd = self.__confix + ' add ' + self._aConfigFile
         cmdUnlink = self.__confix + ' unlink ' + self._aConfigFile
         cmdSetMergeTool = self.__confix + ' setMergeTool /bin/ls'
         cmdMerge = self.__confix + ' merge ' + self._aConfigFile
         
-        self.assertEqual(call(cmdSetRepo, shell=True), 0)
         self.assertEqual(call(cmdAdd, shell=True), 0)
         self.assertEqual(call(cmdUnlink, shell=True), 0)
         self.assertEqual(call(cmdSetMergeTool, shell=True), 0)
@@ -192,7 +200,10 @@ class TestConfixCmdLine(unittest.TestCase):
     def test_execRm(self):
         cmdAdd = self.__confix + ' add ' + self._anotherConfigFile
         cmdRm = self.__confix + ' rm ' + self._anotherConfigFile
+        cmdUnlink = self.__confix + ' unlink ' + self._anotherConfigFile
         self.assertEqual(call(cmdAdd, shell=True), 0)
+        self.assertEqual(call(cmdRm, shell=True), 1)  # fails because file still linked
+        self.assertEqual(call(cmdUnlink, shell=True), 0)
         self.assertEqual(call(cmdRm, shell=True), 0)
     
     def test_execInfo(self):

@@ -27,18 +27,22 @@ class Confix():
         if not os.path.isdir(self.__rootDir):
             raise ConfixError("not a valid confix root directory: " + self.__rootDir)        
         self.__rootDir = os.path.normpath(self.__rootDir)
-        self.__conf_file = os.path.join(self.__rootDir, 'config')
         self.__backupDir = os.path.join(self.__rootDir, 'backup')
         os.makedirs(self.__backupDir, exist_ok=True)
         # config values
-        if not os.path.exists(self.__conf_file):
+        self.__confFile = os.path.join(self.__rootDir, 'config')
+        if not os.path.exists(self.__confFile):
             self.__createDefaultConfig()
         self.__updateConfig()
-        logging.debug("Config file loaded")
+    
+    def __checkPrereq(self):
+        """ check prerequisites """
+        if not self.__repoDir:
+            raise ConfixError("You have to set the confix repo.")
     
     def __updateConfig(self):
         self.__config = configparser.ConfigParser()
-        self.__config.read(self.__conf_file)
+        self.__config.read(self.__confFile)
         self.__mergeTool = self.__queryConfig('MAIN', 'MERGE_TOOL')
         self.__repoDir = self.__queryConfig('MAIN', 'REPO')
         if self.__repoDir:
@@ -89,19 +93,19 @@ class Confix():
         
     def __setConfigValue(self, section, key, value):
         config = configparser.ConfigParser()
-        config.read(self.__conf_file)
+        config.read(self.__confFile)
         if not config.has_section(section):
             config.add_section(section)
         config.set(section, key, value)
-        with open(self.__conf_file, 'w') as configfile:
+        with open(self.__confFile, 'w') as configfile:
             config.write(configfile)
         self.__updateConfig()
     
     def __merge(self, filePath1, filePath2):
         if not self.__mergeTool:
-            raise ConfixError("you have to specify a MERGE_TOOL in " + self.__conf_file)
+            raise ConfixError("you have to specify a MERGE_TOOL in " + self.__confFile)
         if not os.path.exists(self.__mergeTool):
-            raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__conf_file + " does not exist")
+            raise ConfixError("MERGE_TOOL " + self.__mergeTool + " specified in " + self.__confFile + " does not exist")
         if call(self.__mergeTool + ' ' + filePath1 + ' ' + filePath2, shell=True) != 0:
             raise ConfixError("MERGE_TOOL returned an error")
     
@@ -130,6 +134,7 @@ class Confix():
         self.__setConfigValue("MAIN", "MERGE_TOOL", mergeToolPath)
     
     def merge(self, filePath):
+        self.__checkPrereq()
         if not os.path.exists(filePath):
             raise ConfixError(filePath + " does not exist")
         repoFile = self.__getRepoFilePath(filePath)
@@ -143,6 +148,7 @@ class Confix():
         Raises a ConfixError if filePath is not a regular file. 
         Returns false is already linked.
         """
+        self.__checkPrereq()
         repoFile = self.__getRepoFilePath(filePath)
         if self.__isLinked(filePath):
             logging.info(filePath + " is already linked")
@@ -165,7 +171,8 @@ class Confix():
     def rm(self, filePath):
         """ Removes the given filePath from the confix repo. If the file is still linked or 
         does not exist in the confix repo, a ConfixError gets raised.
-        """ 
+        """
+        self.__checkPrereq()
         if self.__isLinked(filePath):
             raise ConfixError(filePath + " is still linked")
         if not self.__existsInRepo(filePath):
@@ -179,6 +186,7 @@ class Confix():
         If force is true, the original file will be backuped, removed and a link to the file
         in the confix repo will be created.
         """
+        self.__checkPrereq()
         filePath = os.path.abspath(filePath)
         if self.__isLinked(filePath):
             return True
@@ -198,6 +206,7 @@ class Confix():
         Raises a ConfixError if the symlink does not exist, is no symbolic link, does not exist 
         in the confix repo or the symlink does not point to a file in the confix repo.
         """
+        self.__checkPrereq()
         if not self.__isLinked(symlink):
             raise ConfixError(symlink + " is not linked")
         os.unlink(symlink)
@@ -205,11 +214,12 @@ class Confix():
     
     def info(self):
         """ Print some repo info. """
-        info = "repo: " + self.__repoDir
+        info = "repo: " + (self.__repoDir if self.__repoDir else "not set")
         return info
 
     def list(self):
         """ List files in repo. """
+        self.__checkPrereq()
         confixFiles = []
         for root,_,files in os.walk(self.__repoDir):
             for file in files:
