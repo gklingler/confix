@@ -223,7 +223,7 @@ class Confix():
         confixFiles = []
         for root,_,files in os.walk(self.__repoDir):
             for file in files:
-                confixFile = os.path.join(root, file)[len(self.__repoDir):]
+                confixFile = self.__unmaskHome(os.path.join(root, file)[len(self.__repoDir):])
                 confixFiles.append([confixFile, self.__isLinked(confixFile)])
         return confixFiles
 
