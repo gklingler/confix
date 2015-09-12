@@ -140,7 +140,8 @@ class Confix():
         repoFile = self.__getRepoFilePath(filePath)
         if not os.path.exists(repoFile):
             raise ConfixError(filePath + " does not exist in confix repo")
-        self.__merge(filePath, self.__getRepoFilePath(filePath))
+        repoFile = repoFile.replace('$HOME', '\$HOME')
+        self.__merge(filePath, repoFile)
     
     def add(self, filePath, force=False):
         """ Adds a file to the config repo and replaces the original with
@@ -158,7 +159,7 @@ class Confix():
         elif not os.path.isfile(filePath):
             raise ConfixError(filePath + " is not a file")
         elif os.path.exists(repoFile) and not force:
-            raise ConfixError("a different version of " + filePath + " already exists in repo (you might want to use --merge or --force)")
+            raise ConfixError("a different version of " + filePath + " already exists in repo (you might want to use 'confix merge' or (and) 'confix add --force')")
         elif os.path.islink(filePath) and not force:
             raise ConfixError(filePath + " is a symlink")
         os.makedirs(os.path.dirname(repoFile), exist_ok=True)
@@ -197,7 +198,7 @@ class Confix():
                 self.__backupFile(filePath, True)
                 os.remove(filePath)
             else:
-                raise ConfixError(filePath + " already exists (you might want to use --force)")
+                raise ConfixError(filePath + " already exists (you might want to use 'confix merge' or (and) 'confix add --force')")
         os.makedirs(os.path.dirname(filePath), exist_ok=True)
         os.symlink(self.__getRepoFilePath(filePath), filePath)
         return True
@@ -218,7 +219,7 @@ class Confix():
         info = "repo: " + (self.__repoDir if self.__repoDir else "not set")
         return info
 
-    def list(self):
+    def ls(self):
         """ List files in repo. """
         self.__checkPrereq()
         confixFiles = []
@@ -233,7 +234,7 @@ def cmdInfoHandler(args):
     print(Confix(args.rootDir).info())
 
 def cmdListHandler(args):
-    for file in Confix(args.rootDir).list():
+    for file in Confix(args.rootDir).ls():
         linked = '+' if file[1] else ' '
         print(linked + '   ' + file[0])
 
@@ -267,7 +268,7 @@ if __name__ == '__main__':
     parser_info = subparsers.add_parser('info', help='shows various infomation')
     parser_info.set_defaults(func=cmdInfoHandler)
     
-    parser_list = subparsers.add_parser('list', help='')
+    parser_list = subparsers.add_parser('ls', help='')
     parser_list.set_defaults(func=cmdListHandler)
     
     parser_setRepo = subparsers.add_parser('setRepo', help='sets the confix repo to the given path')

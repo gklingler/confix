@@ -153,9 +153,9 @@ class TestConfix(unittest.TestCase):
     def test_fileList(self):
         self.cfgx.add(self._aConfigFile)
         self.cfgx.add(self._anotherConfigFile)
-        self.assertEqual(len(self.cfgx.list()), 2)
+        self.assertEqual(len(self.cfgx.ls()), 2)
         os.remove(self._aConfigFile)
-        for file in self.cfgx.list():
+        for file in self.cfgx.ls():
             filename = file[0]
             isInstalled = file[1]
             if filename == self._aConfigFile:
@@ -211,7 +211,7 @@ class TestConfixCmdLine(unittest.TestCase):
         self.assertEqual(call(cmdInfo, shell=True), 0)
     
     def test_execList(self):
-        cmdList = self.__confix + ' list'
+        cmdList = self.__confix + ' ls'
         self.assertEqual(call(cmdList, shell=True), 0)
     
 if __name__ == '__main__':
