@@ -1,9 +1,9 @@
 # confix 
 ... a tiny tool that simplifies backup, versioning and distributing your config/dot files on Linux.
 
-The idea is simple: confix moves files to a directory (the confix repository) and replace the original files with a symlinks to the files in the confix repo.
+The idea is simple: confix moves files to a directory (the confix repository) and replace the original files with symlinks to the files in the *confix repo*.
 
-Confix provides some convenient commands for operations on such a confix repo: adding/linking/merging/removing/listing files.
+Confix provides some convenient commands for operations on a *confix repo* such as adding/linking/merging/removing/listing files.
 
 Keeping the configuration files in a dedicated directory simplifies backup, versioning and distributing them: e.g. version/sync confix repo with git, or sync it to an other PC with any file sync tool.
 
@@ -14,7 +14,7 @@ positional arguments:
   {info,ls,setRepo,add,rm,setMergeTool,link,unlink,merge}
     info                shows the current confix repo path
     ls                  lists the files in the confix repo and indicates if
-                        the file is installed by a "+"
+                        a file is linked by a "+"
     setRepo             sets the confix repo to the given path
     add                 copies a file to the confix repo and replaces the
                         original file with a symlink
@@ -53,6 +53,7 @@ clone your git repo to ~/.confixRepo
 confix setRepo ~/.confixRepo     # tell confix to use this directory as confix repo
 confix ls                        # list files in the confix repo
 confix link ~/.gitconfig         # create a symlink from ~/.gitconfig to the file in the confix repo
-confix add ~/.i3/config          # create a symlink from ~/.i3/config to the file in the confix repo
+confix link ~/.i3/config         # create a symlink from ~/.i3/config to the file in the confix repo
 ```
 
+To keep your shared configuration files up to date and in-sync, just "sync" your git repo.
